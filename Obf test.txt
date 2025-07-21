@@ -1,0 +1,113 @@
+if game.PlaceId == 11756661207 then
+   
+    local Players     = game:GetService("Players")
+    local RunService  = game:GetService("RunService")
+
+    local player      = Players.LocalPlayer
+    local backpack    = player:WaitForChild("Backpack")
+    local character   = player.Character or player.CharacterAdded:Wait()
+    local humanoid    = character:WaitForChild("Humanoid")
+
+    local TOOL_NAME        = "FallPeriastron"
+    local AZURE_NAME       = "AzurePeriastron"
+    local fallPeriastron   = backpack:WaitForChild(TOOL_NAME, 10)
+    if not fallPeriastron then
+        error(TOOL_NAME .. " not found in Backpack")
+    end
+
+    local function forceToolAnimTrue()
+        local searchRoots = {
+            character,
+            workspace:FindFirstChild(player.Name)
+        }
+        for _, root in ipairs(searchRoots) do
+            if root then
+                local sword = root:FindFirstChild(TOOL_NAME) or root:FindFirstChild(AZURE_NAME)
+                if sword then
+                    local vars = sword:FindFirstChild("Variables")
+                    if vars then
+                        local ta = vars:FindFirstChild("ToolAnim")
+                        if ta and ta:IsA("BoolValue") then
+                            ta.Value = true
+                            return
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name         = TOOL_NAME .. "ToggleGui"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent       = player:WaitForChild("PlayerGui")
+
+    local button = Instance.new("TextButton")
+    button.Name                   = TOOL_NAME .. "ToggleButton"
+    button.Size                   = UDim2.new(0, 46, 0, 20)
+    button.Position               = UDim2.new(1, -291, 0, -30)
+    button.BackgroundColor3       = Color3.new(0, 0, 0)
+    button.BackgroundTransparency = 1
+    button.TextColor3             = Color3.new(1, 1, 1)
+    button.Text                   = "Sword 🍁"
+    button.Font                   = Enum.Font.SourceSansBold
+    button.TextSize               = 12
+    button.Parent                 = screenGui
+
+    local stroke       = Instance.new("UIStroke")
+    stroke.Parent      = button
+    stroke.Thickness   = 1
+
+    local isEquipped = false
+
+    local function updateUI()
+        stroke.Color = isEquipped and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+    end
+    updateUI()
+
+    local function enforceEquipped()
+        if isEquipped and fallPeriastron.Parent ~= character then
+            fallPeriastron.Parent = character
+        end
+    end
+    RunService.RenderStepped:Connect(enforceEquipped)
+
+    local function equipAzureAfterDelay()
+        task.delay(86,400, function()
+            if not isEquipped then return end
+            local currentBackpack = player:FindFirstChild("Backpack") or player:WaitForChild("Backpack")
+            local azure = currentBackpack:FindFirstChild(AZURE_NAME) or character:FindFirstChild(AZURE_NAME)
+            if azure and humanoid then
+                humanoid:EquipTool(azure)
+            end
+        end)
+    end
+
+    button.MouseButton1Click:Connect(function()
+        if not isEquipped then
+            forceToolAnimTrue()                   
+            humanoid:EquipTool(fallPeriastron)
+            pcall(function() fallPeriastron:Activate() end)
+            isEquipped = true
+            equipAzureAfterDelay()
+        else
+            fallPeriastron.Parent = backpack
+            isEquipped = false
+        end
+        updateUI()
+    end)
+    player.CharacterAdded:Connect(function(char)
+        character   = char
+        humanoid    = character:WaitForChild("Humanoid")
+        backpack    = player:WaitForChild("Backpack")
+        fallPeriastron = backpack:WaitForChild(TOOL_NAME, 10)
+
+        if isEquipped then
+            forceToolAnimTrue()              
+            humanoid:EquipTool(fallPeriastron)
+            pcall(function() fallPeriastron:Activate() end)
+            equipAzureAfterDelay()
+        end
+        updateUI()
+    end)
+end
